@@ -17,18 +17,30 @@
         .calc-container { max-width: 700px; margin: auto; background: var(--bg-card); padding: 25px; border-radius: 12px; border: 1px solid #333; }
         h2 { color: var(--vision-blue); text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-top: 0; text-transform: uppercase; }
         
-        .section { margin-bottom: 25px; padding: 15px; border: 1px solid #333; border-radius: 8px; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .section { margin-bottom: 20px; padding: 15px; border: 1px solid #333; border-radius: 8px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         
         label { display: block; font-size: 0.85em; color: #aaa; margin-bottom: 5px; font-weight: bold; }
         input, select { width: 100%; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
         
-        .result-box { background: #252525; padding: 20px; border-radius: 8px; border-left: 5px solid var(--vision-blue); margin-top: 20px; }
-        .result-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1.1em; }
-        .total-row { border-top: 2px solid #444; padding-top: 10px; font-weight: bold; font-size: 1.4em; color: var(--vision-blue); }
+        /* Checkbox Styling */
+        .option-group { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .option-item { display: flex; align-items: center; background: #252525; padding: 10px; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+        .option-item:hover { background: #333; }
+        .option-item input { width: auto; margin-right: 15px; cursor: pointer; }
+        .option-label { flex: 1; font-size: 1em; color: #eee; }
+        .option-price { color: var(--vision-blue); font-weight: bold; }
+
+        .result-box { background: #252525; padding: 25px; border-radius: 8px; border: 1px solid var(--vision-blue); margin-top: 20px; }
+        .main-price-row { text-align: center; border-bottom: 2px solid #444; padding-bottom: 20px; margin-bottom: 20px; }
+        .main-price-label { font-size: 1em; color: var(--vision-blue); text-transform: uppercase; letter-spacing: 1px; }
+        .main-price-val { font-size: 3.5em; font-weight: bold; color: var(--accent-green); display: block; }
         
-        .module-summary { font-size: 0.85em; color: #888; margin-top: 10px; }
-        .module-tag { display: inline-block; background: #333; padding: 2px 8px; border-radius: 4px; margin-right: 5px; }
+        .detail-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 1em; color: #ccc; }
+        .sub-total { border-top: 1px solid #444; padding-top: 10px; margin-top: 10px; color: #fff; font-weight: bold; }
+        
+        .module-summary { font-size: 0.8em; color: #666; margin-top: 20px; text-align: center; }
+        .module-tag { display: inline-block; background: #333; padding: 2px 10px; border-radius: 10px; margin: 3px; }
     </style>
 </head>
 <body>
@@ -47,7 +59,7 @@
                 <input type="number" id="payload" value="630" oninput="calculate()">
             </div>
             <div>
-                <label>Türantriebe (Fahrkorb):</label>
+                <label>Türantriebe:</label>
                 <select id="doorSides" onchange="calculate()">
                     <option value="1">1 Antrieb</option>
                     <option value="2">2 Antriebe</option>
@@ -55,7 +67,7 @@
                 </select>
             </div>
             <div>
-                <label>Intervall (pro Jahr):</label>
+                <label>Intervall:</label>
                 <select id="interval" onchange="calculate()">
                     <option value="1">1x jährlich</option>
                     <option value="2" selected>2x jährlich</option>
@@ -66,34 +78,51 @@
     </div>
 
     <div class="section">
-        <label>Preis pro Minute (€):</label>
-        <input type="number" id="pricePerMin" value="1.85" step="0.05" oninput="calculate()">
+        <label>Zusatzleistungen (Netto):</label>
+        <div class="option-group">
+            <label class="option-item">
+                <input type="checkbox" id="optNotruf" onchange="calculate()">
+                <span class="option-label">Notruf-System</span>
+                <span class="option-price">643,50 €</span>
+            </label>
+            <label class="option-item">
+                <input type="checkbox" id="opt365" onchange="calculate()">
+                <span class="option-label">365-Service-Pauschale</span>
+                <span class="option-price">242,78 €</span>
+            </label>
+        </div>
+    </div>
+
+    <div class="section">
+        <label>Minutenpreis (€):</label>
+        <input type="number" id="pricePerMin" value="1.85" step="0.01" oninput="calculate()">
     </div>
 
     <div class="result-box">
-        <div class="result-row">
-            <span>Wartungszeit (Netto):</span>
-            <span><span id="maintTime">0</span> Min.</span>
+        <div class="main-price-row">
+            <span class="main-price-label">Netto-Betrag (Gesamtjahr)</span>
+            <span class="main-price-val"><span id="netTotal">0.00</span> €</span>
         </div>
-        <div class="result-row">
-            <span>Fahrzeit (Pauschal):</span>
-            <span><span id="travelTime">0</span> Min.</span>
+
+        <div class="detail-row">
+            <span>Arbeitszeit-Kosten:</span>
+            <span><span id="laborCost">0.00</span> €</span>
         </div>
-        <div class="result-row" style="color: var(--accent-green);">
-            <span>Gesamtzeit (Abrechnung):</span>
+        <div class="detail-row">
+            <span>Zusatzleistungen:</span>
+            <span><span id="extraCost">0.00</span> €</span>
+        </div>
+        <div class="detail-row" style="color: var(--vision-blue); font-weight: bold; border-top: 1px solid #444; padding-top: 10px;">
+            <span>Gesamtzeit:</span>
             <span><span id="totalMin">0</span> Min.</span>
         </div>
         
-        <div class="result-row" style="margin-top: 20px;">
-            <span>Summe Netto:</span>
-            <span><span id="netTotal">0.00</span> €</span>
-        </div>
-        <div class="result-row">
+        <div class="detail-row sub-total">
             <span>MwSt (20%):</span>
             <span><span id="vat">0.00</span> €</span>
         </div>
-        <div class="result-row total-row">
-            <span>Gesamtbetrag (Brutto):</span>
+        <div class="detail-row" style="font-size: 1.2em; font-weight: bold;">
+            <span>Brutto-Betrag:</span>
             <span><span id="grossTotal">0.00</span> €</span>
         </div>
 
@@ -103,12 +132,9 @@
 
 <script>
     const baseTasks = {
-        A: 22, // Basis-Minuten bei 630kg / 1 Tür
-        B: 18,
-        C: 13, // Ohne den skalierbaren Türantrieb (7 Min separat)
-        D: 10, // Nur Grube, Stockwerke kommen extra
-        doorTask: 7, // Ein Türantrieb
-        floorTasks: 5 // Pro Stockwerk (Tür + Ruftaster)
+        A: 22, B: 18, C: 13, D: 10,
+        doorTask: 7,
+        floorTasks: 5
     };
 
     function calculate() {
@@ -117,52 +143,56 @@
         const doorSides = parseInt(document.getElementById('doorSides').value) || 1;
         const interval = parseInt(document.getElementById('interval').value);
         const pricePerMin = parseFloat(document.getElementById('pricePerMin').value) || 0;
+        
+        const hasNotruf = document.getElementById('optNotruf').checked;
+        const has365 = document.getElementById('opt365').checked;
 
-        // Skalierungsfaktor für Reinigungs- & Schmierflächen
         const factor = 1 + (Math.max(0, payload - 630) / 5000);
 
-        // 1. Wartungszeit berechnen (Basis 90 Min bei 4H/630kg)
         let maintMin = (baseTasks.A + baseTasks.B + baseTasks.C + baseTasks.D) * factor;
         maintMin += (baseTasks.doorTask * doorSides * factor);
         maintMin += (baseTasks.floorTasks * floors * factor);
 
-        // 2. Intervall-Logik anwenden
         let travel = 0;
         if (interval === 1) {
-            maintMin += 20; // Dreck-Zuschlag
+            maintMin = 110 * factor;
             travel = 30;
         } else if (interval === 2) {
             travel = 30;
         } else if (interval === 4) {
-            maintMin = (maintMin * 0.7) + 40 + 10; // 0.7 Skalierung + Quatsch + Bonus
+            maintMin = (maintMin * 0.7) + 50;
             travel = 60;
         }
 
         maintMin = Math.round(maintMin);
         const totalMin = maintMin + travel;
+        
+        // Kostenberechnung
+        const laborCost = totalMin * pricePerMin;
+        let extraCost = 0;
+        if (hasNotruf) extraCost += 643.50;
+        if (has365) extraCost += 242.78;
 
-        // 3. Preise berechnen
-        const netto = totalMin * pricePerMin;
+        const netto = laborCost + extraCost;
         const tax = netto * 0.20;
         const brutto = netto + tax;
 
-        // 4. Anzeige aktualisieren
-        document.getElementById('maintTime').innerText = maintMin;
-        document.getElementById('travelTime').innerText = travel;
+        // Anzeige aktualisieren
+        document.getElementById('netTotal').innerText = netto.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('laborCost').innerText = laborCost.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('extraCost').innerText = extraCost.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
         document.getElementById('totalMin').innerText = totalMin;
-        document.getElementById('netTotal').innerText = netto.toFixed(2);
-        document.getElementById('vat').innerText = tax.toFixed(2);
-        document.getElementById('grossTotal').innerText = brutto.toFixed(2);
+        document.getElementById('vat').innerText = tax.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        document.getElementById('grossTotal').innerText = brutto.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
         document.getElementById('moduleBreakdown').innerHTML = `
-            <span class="module-tag">Basis: ${payload}kg</span>
+            <span class="module-tag">${payload}kg</span>
             <span class="module-tag">${floors} Etagen</span>
             <span class="module-tag">${doorSides} Antrieb(e)</span>
-            <span class="module-tag">Faktor: ${factor.toFixed(2)}</span>
+            <span class="module-tag">${interval}x Wartung</span>
         `;
     }
 
-    // Initialstart
     calculate();
 </script>
 </body>
