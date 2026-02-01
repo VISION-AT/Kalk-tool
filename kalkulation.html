@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vision Aufzugtechnik - Kalkulation</title>
+    <style>
+        :root {
+            --vision-blue: #00A8E8;
+            --bg-dark: #121212;
+            --bg-card: #1e1e1e;
+            --text-light: #ffffff;
+            --accent-green: #00ff00;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg-dark); color: var(--text-light); padding: 15px; }
+        .calc-container { max-width: 700px; margin: auto; background: var(--bg-card); padding: 25px; border-radius: 12px; border: 1px solid #333; }
+        h2 { color: var(--vision-blue); text-align: center; border-bottom: 2px solid #333; padding-bottom: 15px; margin-top: 0; text-transform: uppercase; }
+        
+        .section { margin-bottom: 25px; padding: 15px; border: 1px solid #333; border-radius: 8px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        label { display: block; font-size: 0.85em; color: #aaa; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 12px; background: #2d2d2d; border: 1px solid #444; color: white; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
+        
+        .result-box { background: #252525; padding: 20px; border-radius: 8px; border-left: 5px solid var(--vision-blue); margin-top: 20px; }
+        .result-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 1.1em; }
+        .total-row { border-top: 2px solid #444; padding-top: 10px; font-weight: bold; font-size: 1.4em; color: var(--vision-blue); }
+        
+        .module-summary { font-size: 0.85em; color: #888; margin-top: 10px; }
+        .module-tag { display: inline-block; background: #333; padding: 2px 8px; border-radius: 4px; margin-right: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="calc-container">
+    <h2>Wartungs-Kalkulation</h2>
+
+    <div class="section">
+        <div class="grid">
+            <div>
+                <label>Stockwerke:</label>
+                <input type="number" id="floors" value="4" oninput="calculate()">
+            </div>
+            <div>
+                <label>Nutzlast (kg):</label>
+                <input type="number" id="payload" value="630" oninput="calculate()">
+            </div>
+            <div>
+                <label>Türantriebe (Fahrkorb):</label>
+                <select id="doorSides" onchange="calculate()">
+                    <option value="1">1 Antrieb</option>
+                    <option value="2">2 Antriebe</option>
+                    <option value="3">3 Antriebe</option>
+                </select>
+            </div>
+            <div>
+                <label>Intervall (pro Jahr):</label>
+                <select id="interval" onchange="calculate()">
+                    <option value="1">1x jährlich</option>
+                    <option value="2" selected>2x jährlich</option>
+                    <option value="4">4x jährlich</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="section">
+        <label>Preis pro Minute (€):</label>
+        <input type="number" id="pricePerMin" value="1.85" step="0.05" oninput="calculate()">
+    </div>
+
+    <div class="result-box">
+        <div class="result-row">
+            <span>Wartungszeit (Netto):</span>
+            <span><span id="maintTime">0</span> Min.</span>
+        </div>
+        <div class="result-row">
+            <span>Fahrzeit (Pauschal):</span>
+            <span><span id="travelTime">0</span> Min.</span>
+        </div>
+        <div class="result-row" style="color: var(--accent-green);">
+            <span>Gesamtzeit (Abrechnung):</span>
+            <span><span id="totalMin">0</span> Min.</span>
+        </div>
+        
+        <div class="result-row" style="margin-top: 20px;">
+            <span>Summe Netto:</span>
+            <span><span id="netTotal">0.00</span> €</span>
+        </div>
+        <div class="result-row">
+            <span>MwSt (20%):</span>
+            <span><span id="vat">0.00</span> €</span>
+        </div>
+        <div class="result-row total-row">
+            <span>Gesamtbetrag (Brutto):</span>
+            <span><span id="grossTotal">0.00</span> €</span>
+        </div>
+
+        <div class="module-summary" id="moduleBreakdown"></div>
+    </div>
+</div>
+
+<script>
+    const baseTasks = {
+        A: 22, // Basis-Minuten bei 630kg / 1 Tür
+        B: 18,
+        C: 13, // Ohne den skalierbaren Türantrieb (7 Min separat)
+        D: 10, // Nur Grube, Stockwerke kommen extra
+        doorTask: 7, // Ein Türantrieb
+        floorTasks: 5 // Pro Stockwerk (Tür + Ruftaster)
+    };
+
+    function calculate() {
+        const floors = parseInt(document.getElementById('floors').value) || 1;
+        const payload = parseInt(document.getElementById('payload').value) || 630;
+        const doorSides = parseInt(document.getElementById('doorSides').value) || 1;
+        const interval = parseInt(document.getElementById('interval').value);
+        const pricePerMin = parseFloat(document.getElementById('pricePerMin').value) || 0;
+
+        // Skalierungsfaktor für Reinigungs- & Schmierflächen
+        const factor = 1 + (Math.max(0, payload - 630) / 5000);
+
+        // 1. Wartungszeit berechnen (Basis 90 Min bei 4H/630kg)
+        let maintMin = (baseTasks.A + baseTasks.B + baseTasks.C + baseTasks.D) * factor;
+        maintMin += (baseTasks.doorTask * doorSides * factor);
+        maintMin += (baseTasks.floorTasks * floors * factor);
+
+        // 2. Intervall-Logik anwenden
+        let travel = 0;
+        if (interval === 1) {
+            maintMin += 20; // Dreck-Zuschlag
+            travel = 30;
+        } else if (interval === 2) {
+            travel = 30;
+        } else if (interval === 4) {
+            maintMin = (maintMin * 0.7) + 40 + 10; // 0.7 Skalierung + Quatsch + Bonus
+            travel = 60;
+        }
+
+        maintMin = Math.round(maintMin);
+        const totalMin = maintMin + travel;
+
+        // 3. Preise berechnen
+        const netto = totalMin * pricePerMin;
+        const tax = netto * 0.20;
+        const brutto = netto + tax;
+
+        // 4. Anzeige aktualisieren
+        document.getElementById('maintTime').innerText = maintMin;
+        document.getElementById('travelTime').innerText = travel;
+        document.getElementById('totalMin').innerText = totalMin;
+        document.getElementById('netTotal').innerText = netto.toFixed(2);
+        document.getElementById('vat').innerText = tax.toFixed(2);
+        document.getElementById('grossTotal').innerText = brutto.toFixed(2);
+
+        document.getElementById('moduleBreakdown').innerHTML = `
+            <span class="module-tag">Basis: ${payload}kg</span>
+            <span class="module-tag">${floors} Etagen</span>
+            <span class="module-tag">${doorSides} Antrieb(e)</span>
+            <span class="module-tag">Faktor: ${factor.toFixed(2)}</span>
+        `;
+    }
+
+    // Initialstart
+    calculate();
+</script>
+</body>
+</html>
